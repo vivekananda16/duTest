@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllTestCases, searchTestCases, deleteTestCase } from "../api/testCaseApi";
+import { getAllTestCases, searchTestCases, deleteTestCase, getActiveCount, getHighPriorityCount } from "../api/testCaseApi";
 
 function HomePage() {
   const navigate = useNavigate();
@@ -12,24 +12,48 @@ function HomePage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const pageSize = 6;
+  const [activeCount, setActiveCount] = useState(0);
+  const [highPriorityCount, setHighPriorityCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   useEffect(() => {
     loadTestCases(currentPage);
+    loadCounts();
   }, [currentPage]);
 
   const loadTestCases = async (page) => {
-    const response = await getAllTestCases(page, pageSize);
-    setTestCases(response.data.content);
-    setTotalPages(response.data.totalPages);
-    setTotalElements(response.data.totalElements);
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getAllTestCases(page, pageSize);
+      setTestCases(response.data.content);
+      setTotalPages(response.data.totalPages);
+      setTotalElements(response.data.totalElements);
+    } catch (err) {
+      setError("Failed to load test cases. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSearch = async () => {
-    const response = await searchTestCases(keyword, status, priority, 0, pageSize);
-    setTestCases(response.data.content);
-    setTotalPages(response.data.totalPages);
-    setTotalElements(response.data.totalElements);
-    setCurrentPage(0);
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await searchTestCases(keyword, status, priority, 0, pageSize);
+      setTestCases(response.data.content);
+      setTotalPages(response.data.totalPages);
+      setTotalElements(response.data.totalElements);
+      setCurrentPage(0);
+    }
+    catch (err) {
+      setError("Fail to fetch the data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReset = () => {
@@ -40,12 +64,21 @@ function HomePage() {
     loadTestCases(0);
   };
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this test case?");
-    if (confirmDelete) {
-      await deleteTestCase(id);
-      loadTestCases(currentPage);
-    }
+  const openDeleteModal = (id) => {
+    setDeleteTargetId(id);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteTargetId(null);
+    setDeleteModalOpen(false);
+  };
+
+  const confirmDelete = async () => {
+    await deleteTestCase(deleteTargetId);
+
+    closeDeleteModal();
+    loadTestCases(currentPage);
   };
 
   const goToPreviousPage = () => {
@@ -60,21 +93,32 @@ function HomePage() {
   const getStatusBadge = (status) => {
     const base = "px-2 py-1 rounded-full text-xs font-semibold uppercase tracking-wide";
     switch (status) {
-      case "ACTIVE":   return `${base} bg-green-100 text-green-700`;
+      case "ACTIVE": return `${base} bg-green-100 text-green-700`;
       case "INACTIVE": return `${base} bg-gray-100 text-gray-600`;
-      case "PASS":     return `${base} bg-blue-100 text-blue-700`;
-      case "FAIL":     return `${base} bg-red-100 text-red-700`;
-      default:         return `${base} bg-gray-100 text-gray-500`;
+      case "PASS": return `${base} bg-blue-100 text-blue-700`;
+      case "FAIL": return `${base} bg-red-100 text-red-700`;
+      default: return `${base} bg-gray-100 text-gray-500`;
     }
   };
 
   const getPriorityBadge = (priority) => {
     const base = "px-2 py-1 rounded-full text-xs font-semibold uppercase tracking-wide";
     switch (priority) {
-      case "HIGH":   return `${base} bg-red-100 text-red-600`;
+      case "HIGH": return `${base} bg-red-100 text-red-600`;
       case "MEDIUM": return `${base} bg-yellow-100 text-yellow-600`;
-      case "LOW":    return `${base} bg-green-100 text-green-600`;
-      default:       return `${base} bg-gray-100 text-gray-500`;
+      case "LOW": return `${base} bg-green-100 text-green-600`;
+      default: return `${base} bg-gray-100 text-gray-500`;
+    }
+  };
+
+  const loadCounts = async () => {
+    try {
+      const activeRes = await getActiveCount();
+      const highRes = await getHighPriorityCount();
+      setActiveCount(activeRes.data);
+      setHighPriorityCount(highRes.data);
+    } catch (err) {
+      console.error("Failed to load counts", err);
     }
   };
 
@@ -94,6 +138,12 @@ function HomePage() {
           + Create Test Case
         </button>
       </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 flex justify-between items-center">
+          <span>⚠️ {error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 font-bold">✕</button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -109,20 +159,16 @@ function HomePage() {
           <div className="bg-green-100 p-3 rounded-lg text-2xl">✅</div>
           <div>
             <p className="text-sm text-gray-500">Active</p>
-            <p className="text-2xl font-bold text-green-600">
-              {testCases.filter((tc) => tc.status === "ACTIVE").length}
-            </p>
-            <p className="text-xs text-gray-400">On current page</p>
+            <p className="text-2xl font-bold text-green-600">{activeCount}</p>
+            <p className="text-xs text-gray-400">All records</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
           <div className="bg-orange-100 p-3 rounded-lg text-2xl">📈</div>
           <div>
             <p className="text-sm text-gray-500">High Priority</p>
-            <p className="text-2xl font-bold text-orange-500">
-              {testCases.filter((tc) => tc.priority === "HIGH").length}
-            </p>
-            <p className="text-xs text-gray-400">On current page</p>
+            <p className="text-2xl font-bold text-orange-500">{highPriorityCount}</p>
+            <p className="text-xs text-gray-400">All records</p>
           </div>
         </div>
       </div>
@@ -182,7 +228,13 @@ function HomePage() {
             </tr>
           </thead>
           <tbody>
-            {testCases.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="6" className="text-center py-12 text-gray-400">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                </td>
+              </tr>
+            ) : testCases.length === 0 ? (
               <tr>
                 <td colSpan="6" className="text-center py-12 text-gray-400">
                   No test cases found.
@@ -208,7 +260,7 @@ function HomePage() {
                       ✏️ Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(tc.id)}
+                      onClick={() => openDeleteModal(tc.id)}
                       className="flex items-center gap-1 border border-red-300 text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
                     >
                       🗑️ Delete
@@ -237,11 +289,10 @@ function HomePage() {
               <button
                 key={i}
                 onClick={() => setCurrentPage(i)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                  currentPage === i
-                    ? "bg-indigo-600 text-white"
-                    : "border border-gray-200 text-gray-600 hover:bg-gray-100"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${currentPage === i
+                  ? "bg-indigo-600 text-white"
+                  : "border border-gray-200 text-gray-600 hover:bg-gray-100"
+                  }`}
               >
                 {i + 1}
               </button>

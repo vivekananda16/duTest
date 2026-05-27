@@ -14,4 +14,8 @@ export const deleteTestCase = (id) => api.delete(`/${id}`);
 
 export const searchTestCases = ( keyword, status, priority, page=0, size=6) => api.get("/search",{params: {keyword, status,priority, page, size,},});
 
+export const getActiveCount = () => api.get("/count/active");
+
+export const getHighPriorityCount = () => api.get("/count/high");
+
 export default api;

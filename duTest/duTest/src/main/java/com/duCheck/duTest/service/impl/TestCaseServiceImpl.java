@@ -76,4 +76,14 @@ public class TestCaseServiceImpl implements TestCaseService {
         Pageable pageable=PageRequest.of(page,size);
         return testCaseRepository.findAll(TestCaseSpecification.searchAndFilter(keyword, status, priority), pageable);
     }
+
+    @Override
+    public long getActiveTestCount() {
+        return testCaseRepository.countByStatus(Status.ACTIVE);
+    }
+
+    @Override
+    public long getHighPriorityTestCount() {
+        return testCaseRepository.countByPriority(Priority.HIGH);
+    }
 }

@@ -14,4 +14,6 @@ public interface TestCaseService {
     TestCase updateTestCase(Long id, TestCase testCase);
     void deleteTestCase(Long id);
     Page<TestCase> searchTestCase(String keyword, Status status, Priority priority, int page, int size);
+    long getActiveTestCount();
+    long getHighPriorityTestCount();
 }

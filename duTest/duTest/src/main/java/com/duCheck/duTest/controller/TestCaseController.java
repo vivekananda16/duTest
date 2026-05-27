@@ -51,4 +51,12 @@ public class TestCaseController {
                                                          @RequestParam(defaultValue = "6")int size){
         return ResponseEntity.ok(testCaseService.searchTestCase(keyword, status, priority, page, size));
     }
+     @GetMapping("/count/active")
+    public ResponseEntity<Long> getActiveTestCaseCount(){
+        return ResponseEntity.ok(testCaseService.getActiveTestCount());
+     }
+     @GetMapping("/count/high")
+    public ResponseEntity<Long> getHighPriorityTestCaseCount(){
+        return ResponseEntity.ok(testCaseService.getHighPriorityTestCount());
+     }
 }
