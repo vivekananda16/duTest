@@ -1,12 +1,13 @@
 package com.duCheck.duTest.specification;
 
+import com.duCheck.duTest.model.Project;
 import com.duCheck.duTest.model.TestCase;
 import com.duCheck.duTest.model.enums.Priority;
 import com.duCheck.duTest.model.enums.Status;
 import org.springframework.data.jpa.domain.Specification;
 
 public class TestCaseSpecification {
-    public static Specification<TestCase> searchAndFilter(String keyword, Status status, Priority priority){
+    public static Specification<TestCase> searchAndFilter(String keyword, Status status, Priority priority, Long projectId){
         return ((root, query, cb) ->{
 //            start with empty condition
             var predicate= cb.conjunction();
@@ -29,6 +30,12 @@ public class TestCaseSpecification {
             if(priority != null){
                 predicate = cb.and(predicate,
                         cb.equal(root.get("priority"),priority)
+                );
+            }
+
+            if (projectId != null) {
+                predicate = cb.and(predicate,
+                        cb.equal(root.get("project").get("id"), projectId)
                 );
             }
 

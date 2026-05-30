@@ -24,6 +24,13 @@ public class GlobalExceptionHandler {
                 (LocalDateTime.now(),HttpStatus.CONFLICT.value(),"Conflict",ex.getMessage(),request.getRequestURI());
         return new ResponseEntity<>(errorResponse,HttpStatus.CONFLICT);
     }
+    //  for handling if the project have any test cases and user try to delete that.
+    @ExceptionHandler(ProjectNotEmptyException.class)
+    public ResponseEntity<ErrorResponse> handleProjectNotEmpty(ProjectNotEmptyException ex, HttpServletRequest request){
+        ErrorResponse errorResponse = new ErrorResponse
+                (LocalDateTime.now(),HttpStatus.CONFLICT.value(),"Conflict",ex.getMessage(),request.getRequestURI());
+        return new ResponseEntity<>(errorResponse,HttpStatus.CONFLICT);
+    }
 //    for unexpected exception
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex,HttpServletRequest request){

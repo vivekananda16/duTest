@@ -1,21 +1,42 @@
 import axios from "axios";
 
-const api = axios.create({baseURL: "http://localhost:8080/api/testcases",});
+const api = axios.create({ baseURL: "http://localhost:8080/api" });
 
-export const getAllTestCases = (page=0, size=6) => api.get("",{params:{page, size},});
+// ─── Project APIs ───────────────────────────────────────────
+export const getAllProjects = (page = 0, size = 6) =>
+  api.get("/projects", { params: { page, size } });
 
-export const getTestCaseById = (id) => api.get(`/${id}`);
+export const getProjectById = (id) => api.get(`/projects/${id}`);
 
-export const createTestCase = (data) => api.post("", data);
+export const createProject = (data) => api.post("/projects", data);
 
-export const updateTestCase = (id, data) => api.patch(`/${id}`, data);
+export const deleteProject = (id) => api.delete(`/projects/${id}`);
 
-export const deleteTestCase = (id) => api.delete(`/${id}`);
+// ─── Test Case APIs ─────────────────────────────────────────
+export const getAllTestCases = (projectId, page = 0, size = 6) =>
+  api.get(`/projects/${projectId}/testcases`, { params: { page, size } });
 
-export const searchTestCases = ( keyword, status, priority, page=0, size=6) => api.get("/search",{params: {keyword, status,priority, page, size,},});
+export const getTestCaseById = (projectId, id) =>
+  api.get(`/projects/${projectId}/testcases/${id}`);
 
-export const getActiveCount = () => api.get("/count/active");
+export const createTestCase = (projectId, data) =>
+  api.post(`/projects/${projectId}/testcases`, data);
 
-export const getHighPriorityCount = () => api.get("/count/high");
+export const updateTestCase = (projectId, id, data) =>
+  api.patch(`/projects/${projectId}/testcases/${id}`, data);
+
+export const deleteTestCase = (projectId, id) =>
+  api.delete(`/projects/${projectId}/testcases/${id}`);
+
+export const searchTestCases = (projectId, keyword, status, priority, page = 0, size = 6) =>
+  api.get(`/projects/${projectId}/testcases/search`, {
+    params: { keyword, status, priority, page, size },
+  });
+
+export const getActiveCount = (projectId) =>
+  api.get(`/projects/${projectId}/testcases/count/active`);
+
+export const getHighPriorityCount = (projectId) =>
+  api.get(`/projects/${projectId}/testcases/count/high`);
 
 export default api;

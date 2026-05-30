@@ -1,10 +1,13 @@
 package com.duCheck.duTest.service.impl;
 
+import com.duCheck.duTest.dto.TestCaseRequestDTO;
 import com.duCheck.duTest.exception.DuplicateResourceException;
 import com.duCheck.duTest.exception.ResourceNotFoundException;
+import com.duCheck.duTest.model.Project;
 import com.duCheck.duTest.model.TestCase;
 import com.duCheck.duTest.model.enums.Priority;
 import com.duCheck.duTest.model.enums.Status;
+import com.duCheck.duTest.repository.ProjectRepository;
 import com.duCheck.duTest.repository.TestCaseRepository;
 import com.duCheck.duTest.service.TestCaseService;
 import com.duCheck.duTest.specification.TestCaseSpecification;
@@ -20,19 +23,27 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TestCaseServiceImpl implements TestCaseService {
     private final TestCaseRepository testCaseRepository;
+    private final ProjectRepository projectRepository;
 
     @Override
-    public TestCase createTestCase(TestCase testCase) {
-        if(testCaseRepository.existsByTestCaseID(testCase.getTestCaseID())){
-            throw new DuplicateResourceException("testCaseID already exists."+testCase.getTestCaseID());
+    public TestCase createTestCase(TestCaseRequestDTO requestDTO) {
+        if(testCaseRepository.existsByTestCaseID(requestDTO.getTestCaseID())){
+            throw new DuplicateResourceException("testCaseID already exists."+requestDTO.getTestCaseID());
         }
-        return testCaseRepository.save(testCase);
+        Project project=projectRepository.findById(requestDTO.getProjectId())
+                .orElseThrow(()->new ResourceNotFoundException("project not found with id: "+ requestDTO.getProjectId())
+        );
+      TestCase testCase= TestCase.builder().testCaseID(requestDTO.getTestCaseID())
+              .name(requestDTO.getName()).description(requestDTO.getDescription())
+              .status(requestDTO.getStatus()).priority(requestDTO.getPriority())
+              .project(project).build();
+      return testCaseRepository.save(testCase);
     }
 
     @Override
-    public Page<TestCase> getAllTestCases(int page, int size) {
+    public Page<TestCase> getAllTestCases(Long projectId, int page, int size) {
         Pageable pageable= PageRequest.of(page, size);
-        return testCaseRepository.findAll(pageable);
+        return testCaseRepository.findAll(TestCaseSpecification.searchAndFilter(null,null,null,projectId),pageable);
     }
 
     @Override
@@ -72,18 +83,18 @@ public class TestCaseServiceImpl implements TestCaseService {
     }
 
     @Override
-    public Page<TestCase> searchTestCase(String keyword, Status status, Priority priority, int page, int size) {
+    public Page<TestCase> searchTestCase(String keyword, Status status, Priority priority,Long projectId, int page, int size) {
         Pageable pageable=PageRequest.of(page,size);
-        return testCaseRepository.findAll(TestCaseSpecification.searchAndFilter(keyword, status, priority), pageable);
+        return testCaseRepository.findAll(TestCaseSpecification.searchAndFilter(keyword, status, priority, projectId), pageable);
     }
 
     @Override
-    public long getActiveTestCount() {
-        return testCaseRepository.countByStatus(Status.ACTIVE);
+    public long getActiveTestCount(Long projectId) {
+        return testCaseRepository.countByStatusAndProjectId(Status.ACTIVE, projectId);
     }
 
     @Override
-    public long getHighPriorityTestCount() {
-        return testCaseRepository.countByPriority(Priority.HIGH);
+    public long getHighPriorityTestCount(Long projectId) {
+        return testCaseRepository.countByPriorityAndProjectId(Priority.HIGH, projectId);
     }
 }

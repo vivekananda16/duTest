@@ -44,4 +44,8 @@ public class TestCase {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @ManyToOne
+    @JoinColumn(name ="project_id", nullable = false)
+    private Project project;
 }

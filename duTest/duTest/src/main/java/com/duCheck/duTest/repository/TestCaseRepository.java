@@ -15,4 +15,8 @@ public interface TestCaseRepository extends JpaRepository<TestCase, Long>, JpaSp
     //    for total active + high priority across ALL records we are adding a countBy methode with long RT.
     long countByStatus(Status status);
     long countByPriority(Priority priority);
+
+    long countByStatusAndProjectId(Status status, Long projectId);
+    long countByPriorityAndProjectId(Priority priority, Long projectId);
+    boolean existsByProjectId(Long projectId);
 }
